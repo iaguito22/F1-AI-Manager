@@ -401,10 +401,11 @@ async function startScreen() {
     const v = (id) => intro.querySelector('#' + id).value;
     const ui = {
       root: intro.querySelector('.st-r'),
-      getSettings: () => ({ track: v('iTrack'), weather: v('iWx'), raceLaps: +v('iLaps'), quality: v('iQ') }),
+      getSettings: () => ({ track: v('iTrack'), weather: v('iWx'), raceLaps: +v('iLaps'), fpMin: +v('iFP'), quality: v('iQ') }),
       setSettings: (s) => {
         if (s.track && s.track !== v('iTrack')) pickTrack(s.track);
         if (s.weather) intro.querySelector('#iWx').value = s.weather;
+        if (s.fpMin) { intro.querySelector('#iFP').value = s.fpMin; intro.querySelector('#schedFP').textContent = `${+s.fpMin === 60 ? '1 h' : s.fpMin + ' min'} cada una · buscan trazada y límite`; }
         if (s.raceLaps) { intro.querySelector('#iLaps').value = s.raceLaps; intro.querySelector('#schedLaps').textContent = `${s.raceLaps} vueltas · paradas y peleas`; }
         if (s.quality) intro.querySelector('#iQ').value = s.quality;
       },
