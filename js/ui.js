@@ -337,6 +337,7 @@ export class UI {
       case 'limits': if (!race) this.note('yellow', 'Tiempo borrado', `<b>${c.code}</b> · límites de pista${e.corner ? ' en ' + e.corner : ''}`); break;
       case 'knockout': this.note('red', 'Eliminado', `<b>${c.code}</b> fuera en ${sim.session.id}`, 7000); break;
       case 'flag': this.note(e.flag === 'VSC' ? 'yellow' : 'green', e.flag === 'VSC' ? 'VSC' : 'Pista libre', e.flag === 'VSC' ? 'Coche de seguridad virtual' : 'Bandera verde'); break;
+      case 'vscEnding': this.note('yellow', 'VSC terminando', 'Bandera verde en unos segundos'); break;
       case 'chequered': this.note('green', 'Bandera', race && c ? `<b>${c.code}</b> gana el Gran Premio` : 'Fin de la sesión', 8000); break;
       case 'start': this.go('¡Semáforo apagado!'); break;
       case 'weather': {

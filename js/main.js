@@ -157,6 +157,8 @@ async function main(choice) {
     const eff = camera.position.distanceTo(root.position) * Math.tan((camera.fov * Math.PI) / 360) / Math.tan(Math.PI / 6);
     if (V.detailed && eff > 110) { V.detailed = false; V.hi.visible = false; V.lo.visible = true; }
     else if (!V.detailed && eff < 85) { V.detailed = true; V.hi.visible = true; V.lo.visible = false; }
+    const mid = V.mid ? eff > 26 : eff > 32;
+    if (mid !== V.mid) { V.mid = mid; for (const o of V.midHide) o.visible = !mid; }
     const inGarage = car.state === 'garage' || car.out;
     if (inGarage) {
       const box = T.pit.boxes[TEAMS.indexOf(car.team)];

@@ -212,6 +212,47 @@ function sidepodStations(side) {
   ];
 }
 
+// Junta en una malla las hijas directas de grp con el mismo material (y la misma sombra), con su transformación aplicada
+function bake(grp, keep) {
+  const sets = new Map();
+  for (const m of grp.children) {
+    if (!m.isMesh || keep.has(m) || Array.isArray(m.material)) continue;
+    const k = m.material.uuid + (m.castShadow ? '+' : '-');
+    if (!sets.has(k)) sets.set(k, []);
+    sets.get(k).push(m);
+  }
+  const nm = new THREE.Matrix3();
+  for (const list of sets.values()) {
+    if (list.length < 2) continue;
+    let nv = 0, ni = 0;
+    for (const m of list) { const gm = m.geometry; nv += gm.attributes.position.count; ni += gm.index ? gm.index.count : gm.attributes.position.count; }
+    const P = new Float32Array(nv * 3), N = new Float32Array(nv * 3), U = new Float32Array(nv * 2), I = new Uint32Array(ni);
+    let v0 = 0, i0 = 0; const v = new THREE.Vector3();
+    for (const m of list) {
+      m.updateMatrix(); nm.getNormalMatrix(m.matrix);
+      const gm = m.geometry, pa = gm.attributes.position, na = gm.attributes.normal, ua = gm.attributes.uv, n = pa.count;
+      for (let k = 0; k < n; k++) {
+        v.fromBufferAttribute(pa, k).applyMatrix4(m.matrix); P.set([v.x, v.y, v.z], (v0 + k) * 3);
+        if (na) { v.fromBufferAttribute(na, k).applyMatrix3(nm).normalize(); N.set([v.x, v.y, v.z], (v0 + k) * 3); }
+        if (ua) U.set([ua.getX(k), ua.getY(k)], (v0 + k) * 2);
+      }
+      const flip = m.matrix.determinant() < 0;
+      const ix = gm.index ? gm.index.array : null, cnt = ix ? ix.length : n;
+      for (let k = 0; k < cnt; k += 3) {
+        const a = ix ? ix[k] : k, b = ix ? ix[k + 1] : k + 1, c = ix ? ix[k + 2] : k + 2;
+        I[i0 + k] = v0 + a; I[i0 + k + 1] = v0 + (flip ? c : b); I[i0 + k + 2] = v0 + (flip ? b : c);
+      }
+      v0 += n; i0 += cnt;
+      grp.remove(m);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(P, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(N, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(U, 2));
+    geo.setIndex(new THREE.BufferAttribute(I, 1)); geo.computeBoundingSphere();
+    const mm = new THREE.Mesh(geo, list[0].material); mm.castShadow = list[0].castShadow; mm.receiveShadow = list[0].receiveShadow;
+    grp.add(mm);
+  }
+}
+
 // Coche completo (detalle alto) + versión lejana (LOD)
 export function buildCar(team, drv) {
   const M = mats(team, drv);
@@ -515,7 +556,14 @@ export function buildCar(team, drv) {
     w.position.set(sd * sp.x, sp.r, sp.z); loWheels.push(w);
   }
 
+  // piezas fijas fusionadas por material dentro de su grupo (lo que se mueve sigue suelto): eran ~170 mallas por coche,
+  // ~6000 llamadas de dibujo con la parrilla entera en pantalla
+  const keep = new Set([rain, ...wheels.flatMap((w) => [w.tyre, w.tyreIn])]);
+  for (const grp of [hi, fw, rw, flapPivot, swheel, ...wheels.flatMap((w) => [w.steer, w.spin])]) bake(grp, keep);
+
   const car = {
+    // (detalle medio: lo que de lejos no se distingue: el volante dentro del cockpit y disco, pinza y mangueta tras la llanta)
+    midHide: [swheel, ...wheels.flatMap((w) => w.steer.children.filter((o) => o.isMesh))], mid: false,
     root, body, lod, hi, lo, detailed: true, wheels, loWheels, flap: flapPivot, rain, fw, rw, fwLo, rwLo, M, compound: 'M', fast: false, swheel,
     setCompound(c, fast = false) {
       if (c === this.compound && fast === this.fast) return;

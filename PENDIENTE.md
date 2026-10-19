@@ -47,6 +47,20 @@ Costa a mediodía, 6,16 km, 18 curvas, de 4 a 46 m de altura. Trazado aprobado p
   las terrazas, podio volado sobre el pit lane, escaleras de vidrio en los extremos, entradas de equipo por el paddock
   y torre de control nueva. De noche las plantas se iluminan.
 
+## Revisión de VSC, normas y rendimiento en carrera (17/10, noche)
+Medido con carreras enteras en los 6 circuitos (sonda propia: cruces en pista con VSC, velocidad en boxes, DRS, coches parados, NaN).
+- VSC: se seguía adelantando (hasta 31 pasadas en un VSC): el rápido alcanzaba al de delante y pasaba por otro carril.
+  Ahora se queda detrás; solo se pasa a coches parados, en trompo o arrastrándose tras un golpe. Tampoco se cede para doblar.
+- VSC: un segundo abandono con el VSC en marcha ya lo alarga (antes acababa a su hora); un abandono dentro del pit lane no lo saca.
+- VSC: aviso «VSC terminando» ~10 s antes de la verde (nota y radio).
+- Boxes: entraban a la zona de 80 a ~110 km/h y seguían por encima ~20 m; ahora frenan antes (0 coches por encima en los 6).
+- DRS: contra un doblado el hueco daba 0 y abría el alerón con él a cientos de metros; ahora se mide el hueco real en pista.
+- Adelantamientos: salir de boxes por detrás de otro contaba como que te había adelantado en pista (notas y estadísticas).
+- Rendimiento en carrera (gp, salida con todos juntos): 24 → 37 FPS en helicóptero, 41 → 53 en la cámara de persecución.
+  Piezas fijas de cada coche fusionadas por material (~170 mallas → ~74; se ve igual: comparado píxel a píxel) y detalle medio
+  a más de ~30 m (sin volante ni disco/pinza/mangueta tras la llanta).
+- e2e 58/58 (gp), 58/58 (coast, mánager), 73/73 (urban).
+
 ## Por dónde vamos (17/10)
 Hecho y probado (e2e 57/57 y 72/72):
 - Interfaz entera en Caelestia sin color (Figtree, vidrio, píldoras); colores de estado vivos (sectores, banderas, avisos, pedales).

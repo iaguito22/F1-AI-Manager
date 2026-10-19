@@ -101,7 +101,7 @@ export class Sim {
     // (opts.only: solo ese piloto; lo usa el simulador del equipo del mánager)
     this.cars = DRIVERS.filter((d) => !opts.only || d.code === opts.only).map((drv, i) => this.makeCar(drv, i, brains[drv.code]));
     this.session = null;
-    this.flag = 'GREEN'; this.vscT = 0;
+    this.flag = 'GREEN'; this.vscT = 0; this.vscEnd = false;
     this.fastest = null;
   }
 
@@ -201,7 +201,7 @@ export class Sim {
     if (isFP(id) && this.fpDur) this.session.dur = this.fpDur;   // libres más cortas (opción de la portada)
     this.gravel = []; this.barrierHits = [];
     this.autoMgr = false;   // «Saltar»: los equipos del mánager los lleva la IA hasta el final de la sesión (ver mgrHand)
-    this.t = 0; this.flag = 'GREEN'; this.vscT = 0; this.initWeather(id); this.fastest = null; this.sessionBestSec = null; this.zoneBest = null; this.bestCP = null;
+    this.t = 0; this.flag = 'GREEN'; this.vscT = 0; this.vscEnd = false; this.initWeather(id); this.fastest = null; this.sessionBestSec = null; this.zoneBest = null; this.bestCP = null;
     const isRace = id === 'RACE';
     const active = this.activeCars(id);
     for (const car of this.cars) {
@@ -472,7 +472,12 @@ export class Sim {
     const T = this.T;
     this.updateWeather();
     if (ss.id === 'RACE') this.raceControl(); else this.practiceControl();
-    if (this.vscT > 0) { this.vscT -= DT; if (this.vscT <= 0) { this.flag = 'GREEN'; this.emit({ type: 'flag', flag: 'GREEN' }); } }
+    if (this.vscT > 0) {
+      this.vscT -= DT;
+      // como en la F1: aviso de «VSC terminando» y verde unos segundos después (sigue prohibido adelantar hasta la verde)
+      if (this.vscT <= 10 && !this.vscEnd) { this.vscEnd = true; this.emit({ type: 'vscEnding' }); }
+      if (this.vscT <= 0) { this.flag = 'GREEN'; this.emit({ type: 'flag', flag: 'GREEN' }); }
+    }
     const cars = this.cars;
     // vuelta que no sirve de referencia (neutralizada o con paso por boxes): fuera de la gráfica de aprendizaje y de la degradación
     { const neutral = this.flag !== 'GREEN'; for (const c of cars) if (neutral || c.inPit) c.lapFlag = true; }
@@ -671,7 +676,7 @@ export class Sim {
     }
     const fight = car.mgr ? MGR.fight[car.mgr.fight] : MGR.fight.normal;
     car.mode = 'free'; car.target = null; car.dive = 0; car.squeeze = 0; car.gripAdv = 1;
-    if (yieldTo) car.mode = 'yield';
+    if (yieldTo && !vsc) car.mode = 'yield';   // con VSC no se adelanta, tampoco para doblar
     else if (tgt && !vsc && car.mistake == null) {
       const o = tgt.o; const gapT = tgt.rel / Math.max(20, car.v);
       const faster = car.v - o.v;
@@ -906,6 +911,10 @@ export class Sim {
         const gap0 = LEN + 1.0 + car.v * 0.05 + (o === car.target ? car.followGap || 0 : 0);
         const cap = o.v + (rel - gap0) * 1.4;
         if (cap < target) { target = Math.max(0, cap); if (race && z < 0 && car.mode === 'attack' && cap < car.v - 0.5) this.stuckT = (this.stuckT || 0) + DT; }
+      } else if (this.flag === 'VSC' && !car.inPit && !o.inPit && !o.retired && !o.mistake && o.v > 4 && rel < 40) {
+        // VSC: prohibido adelantar; aunque vaya por otro carril se queda detrás (antes el más rápido le alcanzaba y pasaba)
+        const cap = o.v + (rel - LEN - 6) * 1.4;
+        if (cap < target) target = Math.max(0, cap);
       }
     }
     if (car.state === 'grid') target = 0;
@@ -1112,7 +1121,7 @@ export class Sim {
         if (!race) car.drsOk = true;
         else {
           const ah = this.carAheadOnTrack(car);
-          car.drsOk = ah && this.gapTo(car, ah) < 1.0;
+          car.drsOk = ah && this.trackGap(car, ah) < 1.0;
         }
       }
     }
@@ -1316,8 +1325,11 @@ export class Sim {
   retire(car, why) {
     car.retired = true; car.retiredWhy = why; car.retiredT = this.t; car.v *= 0.3; car.drs = false; car.vs = car.v; car.beta = 0;
     this.emit({ type: 'retire', car, why });
-    if (this.session.id === 'RACE' && this.flag === 'GREEN') {
-      this.flag = 'VSC'; this.vscT = 70 + this.rng() * 30; this.emit({ type: 'flag', flag: 'VSC' });
+    if (this.session.id === 'RACE' && !car.inPit) {
+      // (con otro VSC en marcha se alarga para retirar también este; antes acababa a su hora con el segundo coche en pista)
+      const dur = 70 + this.rng() * 30;
+      if (this.flag === 'GREEN') { this.flag = 'VSC'; this.vscT = dur; this.vscEnd = false; this.emit({ type: 'flag', flag: 'VSC' }); }
+      else { this.vscT = Math.max(this.vscT, dur); this.vscEnd = false; }
     }
   }
 
@@ -1327,7 +1339,7 @@ export class Sim {
     const box = T.pit.boxes[TEAMS.indexOf(car.team)];
     if (car.pitPhase === 'in') {
       const toLimit = T.ahead(car.s, p.limitA);
-      if (toLimit < 400) target = Math.min(target, Math.sqrt(p.speed * p.speed + 2 * 20 * toLimit));
+      if (toLimit < 400) target = Math.min(target, Math.sqrt(p.speed * p.speed + 2 * 10 * Math.max(0, toLimit - 25)));   // (a 20 m/s² pisaba la línea a ~110 km/h: cambiando de carril no frena tanto)
       if (between(T, car.s, p.limitA, p.limitB)) target = Math.min(target, p.speed);
       const toBox = T.ahead(car.s, box.s);
       if (toBox < 300) target = Math.min(target, Math.sqrt(2 * 7 * Math.max(0, toBox - 0.5)));
@@ -2206,6 +2218,8 @@ export class Sim {
     if ((ss.phase === 'green' || ss.phase === 'flag') && this.t - this.raceStart > 4) {
       // un adelantamiento cuenta cuando se consolida (2,5 s delante o ya separados): los vaivenes de lado a lado no
       const pr = this.pairs || (this.pairs = new Map());
+      // (con uno en boxes el orden entre ellos se olvida: al salir por detrás de otro se contaba como adelantamiento en pista)
+      for (const c of cars) if (c.inPit) for (const o of cars) if (o !== c) pr.delete(Math.min(c.i, o.i) * 32 + Math.max(c.i, o.i));
       for (let a = 0; a < cars.length; a++) {
         const A = cars[a]; if (A.inPit || A.retired || A.finished) continue;
         for (let b = a + 1; b < cars.length; b++) {
@@ -2254,15 +2268,18 @@ export class Sim {
   }
 
   // segundos que A lleva de retraso respecto a B en el punto de pista donde está A
-  gapTo(A, B) {
+  gapTo(A, B, d = A.dist) {
     if (this.session.id !== 'RACE') return (A.best - B.best) || 0;
-    const d = A.dist; const c = Math.floor(d / CP_STEP);
+    const c = Math.floor(d / CP_STEP);
     const t0 = B.cpt[c], t1 = B.cpt[c + 1];
     if (t0 == null) return 0;
     const f = (d - c * CP_STEP) / CP_STEP;
     const tb = t1 != null ? t0 + (t1 - t0) * f : t0 + f * CP_STEP / Math.max(20, B.v);
     return Math.max(0, this.t - tb);
   }
+  // lo mismo con el coche de delante en pista, aunque sea un doblado (para el DRS: antes, contra un doblado, el hueco
+  // daba 0 y abría el alerón con él a cientos de metros)
+  trackGap(A, B) { return this.gapTo(A, B, B.dist - this.T.ahead(A.s, B.s)); }
 
   classification() {
     if (!this.session) return this.cars.slice();

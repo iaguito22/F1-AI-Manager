@@ -57,6 +57,9 @@ export class Radio {
       }
       return;
     }
+    if (e.type === 'vscEnding' && race) {
+      for (const m of this.app.manager?.cars || [f]) if (m && !m.retired && !m.finished && !m.inPit) this.say(m, [['e', 'VSC terminando. Prepárate, sin adelantar hasta la verde.']], 2);
+    }
     if (e.type === 'flag' && race) {
       for (const m of this.app.manager?.cars || [f]) {
         if (!m || m.retired || m.finished) continue;

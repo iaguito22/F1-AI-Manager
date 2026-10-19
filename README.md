@@ -4,7 +4,7 @@ Veintidós pilotos con IA que aprenden a correr, y tú llevas el muro de uno de 
 Fin de semana completo: libres 1 y 2 → Q1/Q2/Q3 → carrera, con reglaje, paradas, estrategia de neumáticos,
 lluvia, radio, repeticiones y realización de TV. Hecho con three.js, sin build.
 
-![Adelantamiento en Monte Alto, visto desde el dron](docs/img/adelantamiento-monte-alto.webp)
+![Punta Serena: el pueblo, el puerto y el circuito sobre el acantilado](docs/img/punta-serena-puerto.jpg)
 
 ## En pista
 
@@ -13,7 +13,12 @@ Aprietan más de lo que da el coche, se abren, trompean y acaban en el muro; reb
 
 | | |
 |---|---|
+| ![Choque dentro del túnel de Punta Serena](docs/img/choque-tunel-punta-serena.webp) | ![Varios coches enganchados en una curva de Porto Cidade](docs/img/choque-porto-cidade.webp) |
+| ![Se va contra el muro en la frenada de Neural Park](docs/img/choque-neural-park.webp) | ![Dos coches tocándose y trompeando en Porto Cidade](docs/img/trompo-porto-cidade.webp) |
+| ![Contra la valla en Punta Serena](docs/img/choque-punta-serena.webp) | ![Por la grava y al muro en Val d'Ambre](docs/img/choque-val-dambre.webp) |
 | ![Trompo y golpe contra las protecciones en Monte Alto](docs/img/choque-monte-alto.webp) | ![Se sale en la frenada y acaba en el muro en Al Noor](docs/img/choque-al-noor.webp) |
+
+![Adelantamiento en Monte Alto, visto desde el dron](docs/img/adelantamiento-monte-alto.webp)
 
 | | |
 |---|---|
@@ -52,7 +57,15 @@ El modo espectador sigue ahí: la retransmisión se realiza sola y eliges piloto
 
 ![Pantalla de inicio](docs/img/portada.jpg)
 
-**Panel de aprendizaje** (tecla L): quién mejora más, evolución de tiempos, trazada frente a la ideal y agarre que se atreve a usar en cada curva.
+**Estadísticas de la carrera** (al terminar, pestaña Estadísticas): ganador, vuelta rápida, más adelantamientos, remontada
+y parada más rápida; posiciones vuelta a vuelta, la estrategia de neumáticos de cada piloto y el ritmo de los primeros.
+
+| | |
+|---|---|
+| ![Posiciones vuelta a vuelta](docs/img/estadisticas-posiciones.jpg) | ![Estrategias y ritmo](docs/img/estadisticas-estrategias.jpg) |
+
+**Panel de aprendizaje** (tecla L): quién mejora más, dominio del circuito a lo largo del fin de semana, trazada frente a la ideal,
+agarre que se atreve a usar en cada curva y lo último que ha aprendido cada piloto.
 
 ![Panel de aprendizaje](docs/img/aprendizaje.jpg)
 
@@ -65,6 +78,15 @@ Se elige en la pantalla de inicio:
 - **Al Noor**: desierto de noche con torres de focos, 6 km, hotel iluminado.
 - **Monte Alto**: montaña al atardecer, 5,9 km con desniveles fuertes.
 - **Val d'Ambre**: bosque en otoño, nublado; la lluvia llega por zonas.
+- **Punta Serena**: costa a mediodía, 6,2 km sobre el acantilado; bajada al puerto, muelle entre casas de colores y túnel bajo el pueblo.
+
+| | |
+|---|---|
+| ![Punta Serena desde el mar](docs/img/punta-serena-costa.jpg) | ![El puerto deportivo bajo el acantilado](docs/img/punta-serena-acantilado.jpg) |
+| ![Horquilla con el pueblo detrás](docs/img/punta-serena-horquilla.jpg) | ![Dentro del túnel](docs/img/punta-serena-tunel.jpg) |
+| ![Val d'Ambre: horquilla entre árboles de otoño](docs/img/val-dambre-horquilla.jpg) | ![Val d'Ambre: el valle](docs/img/val-dambre-valle.jpg) |
+| ![Porto Cidade entre edificios](docs/img/porto-cidade-ciudad.jpg) | ![Curva con escapatoria de Porto Cidade](docs/img/porto-cidade-curva.jpg) |
+| ![Neural Park](docs/img/neural-park.jpg) | ![Monte Alto al atardecer](docs/img/monte-alto-atardecer.jpg) |
 
 ## Jugar
 
@@ -84,7 +106,7 @@ muro en el paso exacto en que se aplican (`js/net.js`, `server.js`). Pausar es i
 sesión, pasar de sesión y volver a la sala se votan; la salida de la carrera espera a que todos los muros estén listos.
 Instrucciones para jugadores: `LEEME-MULTIJUGADOR.txt`. Comprobación sin gráficos: `node tools/mpsync.mjs` y `node tools/mpsnap.mjs`.
 
-Opciones por URL: `?q=low` (calidad baja), `?laps=10`, `?track=gp|urban|night|mount`, `?wx=dry|mixed|wet`, `?start=Q1`.
+Opciones por URL: `?q=low` (calidad baja), `?laps=10`, `?track=gp|urban|night|mount|forest|coast`, `?wx=dry|mixed|wet`, `?start=Q1`.
 
 ## Controles
 
