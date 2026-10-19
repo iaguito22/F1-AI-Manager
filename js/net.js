@@ -111,10 +111,10 @@ export function lobby(ui, { role, name, addr, retry }) {
         const iv = setInterval(() => {
           if (state.started) { clearInterval(iv); return; }
           const s = ui.getSettings(); quality = s.quality;
-          const sh = { track: s.track, weather: s.weather, raceLaps: s.raceLaps };
+          const sh = { track: s.track, weather: s.weather, raceLaps: s.raceLaps, fpMin: s.fpMin };
           if (JSON.stringify(sh) !== JSON.stringify(state.settings)) { state.settings = sh; broadcast(); }
         }, 400);
-        state.settings = { track: ui.getSettings().track, weather: ui.getSettings().weather, raceLaps: ui.getSettings().raceLaps };
+        { const g = ui.getSettings(); state.settings = { track: g.track, weather: g.weather, raceLaps: g.raceLaps, fpMin: g.fpMin }; }
         fetch('/info').then((r) => r.json()).then((inf) => { state.ips = inf.ips || []; state.port = inf.port; render(); }).catch(() => { /* sin info */ });
         pollTunnel(false);
       } else {
@@ -175,11 +175,11 @@ export function lobby(ui, { role, name, addr, retry }) {
       const taken = new Map(state.players.filter((p) => p.team).map((p) => [p.team, p]));
       const allReady = state.players.length > 0 && state.players.every((p) => p.ready || p.id === 0);
       root.innerHTML = `<h3>${host ? 'Tu sala' : 'Sala de ' + esc(state.players.find((p) => p.id === 0)?.name || 'anfitrión')}</h3>
-        ${host ? netHTML() : `<p class="hint mpAddr">${tr ? esc(tr.name) : '—'} · ${WX_N[s.weather] || '—'} · ${s.raceLaps || '—'} vueltas de carrera</p>`}
+        ${host ? netHTML() : `<p class="hint mpAddr">${tr ? esc(tr.name) : '—'} · ${WX_N[s.weather] || '—'} · libres de ${+s.fpMin && +s.fpMin !== 60 ? s.fpMin + ' min' : '1 h'} · ${s.raceLaps || '—'} vueltas de carrera</p>`}
         <div class="mpList">${state.players.map((p) => { const t = teamOf(p.team); return `<div class="mpP ${p.id === myId ? 'me' : ''}"><i style="background:${t ? t.c1 : '#555'}"></i><b>${esc(p.name)}${p.id === 0 ? ' <small>anfitrión</small>' : ''}${p.id === myId ? ' <small>tú</small>' : ''}</b><span>${t ? esc(t.name) : 'Espectador'}</span><em class="${p.ready || p.id === 0 ? 'ok' : ''}">${p.id === 0 ? '' : p.ready ? 'Listo' : 'eligiendo'}</em></div>`; }).join('')}</div>
         <h3>Tu equipo</h3>
         <div class="teams mpTeams">${TEAMS.map((t) => { const o = taken.get(t.id), mine = o && o.id === myId; return `<button data-team="${t.id}" class="${mine ? 'on' : ''}" ${o && !mine ? 'disabled' : ''} title="${esc(t.name)}${o && !mine ? ' · ' + esc(o.name) : ''}"><i style="background:${t.c1}"></i><i style="background:${t.c2}"></i><span>${o && !mine ? esc(o.name) : t.short}</span></button>`; }).join('')}<button data-team="" class="${myTeam ? '' : 'on'}"><span>Espectador</span></button></div>
-        ${host ? `<h3>Tiempo</h3>${seg('mpWx', Object.entries(WX_N), s.weather)}<h3>Vueltas de carrera</h3>${seg('mpLaps', [10, 15, 20, 30].map((l) => [l, l]), s.raceLaps)}` : ''}
+        ${host ? `<h3>Tiempo</h3>${seg('mpWx', Object.entries(WX_N), s.weather)}<h3>Vueltas de carrera</h3>${seg('mpLaps', [10, 15, 20, 30].map((l) => [l, l]), s.raceLaps)}<h3>Duración de los libres</h3>${seg('mpFp', [[60, '1 h'], [30, '30 min'], [15, '15 min']], s.fpMin || 60)}` : ''}
         <h3>Calidad gráfica (solo en tu equipo)</h3>${seg('mpQ', [['high', 'Alta'], ['low', 'Baja']], quality)}
         ${host ? `<button class="btn go mpGo" ${allReady ? '' : 'disabled'}>${allReady ? 'Empezar el fin de semana' : 'Esperando a que todos estén listos…'}</button>`
           : `<button class="btn go mpReady ${myReady ? 'ghost' : ''}">${myReady ? 'Listo · esperando al anfitrión (pulsa para cancelar)' : 'Estoy listo'}</button>`}
@@ -195,6 +195,7 @@ export function lobby(ui, { role, name, addr, retry }) {
       if (host) {
         bindSeg('mpWx', (v) => ui.setSettings({ weather: v }));
         bindSeg('mpLaps', (v) => ui.setSettings({ raceLaps: +v }));
+        bindSeg('mpFp', (v) => ui.setSettings({ fpMin: +v }));
         const tb = root.querySelector('.mpTun'); if (tb) tb.onclick = () => { tun.state = 'starting'; tun.err = null; render(); pollTunnel(true); };
         const cb = root.querySelector('.mpCopy'); if (cb) cb.onclick = () => { navigator.clipboard?.writeText(tun.url).then(() => { cb.textContent = 'Copiado'; }, () => { /* */ }); };
         root.querySelector('.mpGo').onclick = () => {
@@ -221,7 +222,7 @@ export function lobby(ui, { role, name, addr, retry }) {
       const me = players.find((p) => p.id === myId);
       if (m.late) ui.setSettings(m.settings);
       resolve({
-        quality, track: m.settings.track, raceLaps: +m.settings.raceLaps, weather: m.settings.weather, mode: 'mp', team: me?.team ?? null,
+        quality, track: m.settings.track, raceLaps: +m.settings.raceLaps, fpMin: +m.settings.fpMin || 60, weather: m.settings.weather, mode: 'mp', team: me?.team ?? null,
         mp: { conn, isHost: host, myId, players, online: m.online, seed: m.seed, settings: m.settings, late: !!m.late, early, rejoin: { role, name: me?.name || name, addr: conn.addr }, tunnel: tun.url },
       });
     }
